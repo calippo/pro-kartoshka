@@ -10,6 +10,7 @@ import {
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 import { useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 
 import "./tailwind.css";
 
@@ -37,7 +38,7 @@ export const links: LinksFunction = () => [
 
 const PASSWORD_STORAGE_KEY = "sneaker-advisor:client-access";
 
-function PasswordGate({ children }: { children: React.ReactNode }) {
+function PasswordGate({ children }: { children: ReactNode }) {
   const [inputValue, setInputValue] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(() => {
@@ -56,7 +57,7 @@ function PasswordGate({ children }: { children: React.ReactNode }) {
   const configuredPassword = import.meta.env.VITE_APP_PASSWORD;
   const passwordRequired = Boolean(configuredPassword);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!passwordRequired) {
@@ -197,7 +198,7 @@ export function ErrorBoundary() {
   );
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
   
@@ -210,16 +211,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className={isHomePage ? "bg-black" : ""}>
-        {children}
-        {!isHomePage && (
-          <footer className="text-center p-4 text-xs text-gray-500 border-t mt-auto">
-            <p>© {new Date().getFullYear()} Sneaker Advisor • Version 1.0.0</p>
-            <p className="mt-1">
-              <a href="/privacy" className="underline hover:text-gray-700">Privacy</a> • 
-              <a href="/terms" className="underline hover:text-gray-700 ml-2">Termini di servizio</a>
-            </p>
-          </footer>
-        )}
+        <PasswordGate>
+          <>
+            {children}
+            {!isHomePage && (
+              <footer className="text-center p-4 text-xs text-gray-500 border-t mt-auto">
+                <p>© {new Date().getFullYear()} Sneaker Advisor • Version 1.0.0</p>
+                <p className="mt-1">
+                  <a href="/privacy" className="underline hover:text-gray-700">Privacy</a>
+                  {" • "}
+                  <a href="/terms" className="underline hover:text-gray-700 ml-2">Termini di servizio</a>
+                </p>
+              </footer>
+            )}
+          </>
+        </PasswordGate>
         <ScrollRestoration />
         <Scripts />
       </body>
