@@ -64,7 +64,7 @@ const MessageBubble = ({ message }: { message: Msg }) => {
     <div className="w-full max-w-2xl mx-auto">
       <div className={`text-center ${message.role === "assistant" ? "" : "mt-8"}`}>
         <h3 className={`text-lg italic font-light mb-2 ${message.role === "user" ? "text-gray-400" : "text-gray-300"}`}>
-          {message.role === "user" ? "Tu" : "Fashion Advisor"}
+          {message.role === "user" ? "Tu" : "Pro Advisor"}
         </h3>
         <div className={`mx-auto text-xl font-light tracking-wide text-center whitespace-pre-line ${message.role === "user" ? "text-gray-300" : "text-white"}`}>
           {message.content}
@@ -265,7 +265,11 @@ export default function Index() {
       const res = await fetch("/api/chat", {
         method: "post",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMsgs, step: stepRef.current }),
+        body: JSON.stringify({
+          messages: newMsgs,
+          step: stepRef.current,
+          password: "pro-kartoshka",
+        }),
       });
       
       if (!res.ok) {
@@ -303,7 +307,11 @@ export default function Index() {
     fetch("/api/chat", {
       method: "post",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: messagesToSend, step: stepRef.current }),
+      body: JSON.stringify({
+        messages: messagesToSend,
+        step: stepRef.current,
+        password: "pro-kartoshka",
+      }),
     })
       .then(res => {
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
@@ -330,22 +338,26 @@ export default function Index() {
       });
   };
 
+  const recommendedModel = getRecommendedModel();
+  const interviewCompleted = Boolean(recommendedModel);
+  const visibleMessages = interviewCompleted ? [] : displayMessages();
+
   return (
     <div className="flex flex-col min-h-screen bg-black text-white font-['Cormorant_Garamond',_serif]">
       <header className="py-8 border-b border-gray-800">
-        <h1 className="text-3xl font-light text-center tracking-widest uppercase">Pro‑Keds Advisor</h1>
-        <p className="text-center text-sm text-gray-400 mt-2 tracking-wide">Tradizione e innovazione in un processo produttivo di eccellenza</p>
+        <h1 className="text-3xl font-light text-center tracking-widest uppercase">Sneaker Model Advisor</h1>
+        <p className="text-center text-sm text-gray-400 mt-2 tracking-wide">Dall’archivio ’49, tra parquet e passerella: lasciati scegliere dallo stile. Quale sneaker sei?</p>
       </header>
       
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-4xl space-y-16 mb-10">
-          {displayMessages().map((m, i) => (
+          {visibleMessages.map((m, i) => (
             <MessageBubble key={i} message={m} />
           ))}
           
-          {isLoading && <SkeletonLoading />}
+          {!interviewCompleted && isLoading && <SkeletonLoading />}
           
-          {error && (
+          {!interviewCompleted && error && (
             <div className="text-center mt-8">
               <button 
                 onClick={retryLastMessage}
@@ -358,77 +370,73 @@ export default function Index() {
         </div>
 
         {/* Show only the recommended model at the end */}
-        {(() => {
-          const recommendedModel = getRecommendedModel();
-          return recommendedModel ? (
-            <div className="w-full max-w-2xl mb-16">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-light mb-4 text-gray-300 tracking-wide">[IL TUO MODELLO]</h2>
+        {recommendedModel && (
+          <div className="w-full max-w-2xl mb-16">
+            <div className="group bg-gray-900 rounded-lg p-8">
+              <div className="relative overflow-hidden rounded-lg mb-6">
+                <img 
+                  src={recommendedModel.image} 
+                  alt={recommendedModel.name}
+                  className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
               </div>
-              <div className="group bg-gray-900 rounded-lg p-8">
-                <div className="relative overflow-hidden rounded-lg mb-6">
-                  <img 
-                    src={recommendedModel.image} 
-                    alt={recommendedModel.name}
-                    className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
+              <div className="text-center">
+                <h3 className="text-2xl font-light text-white mb-2">{recommendedModel.name}</h3>
+                <p className="text-gray-400 text-lg mb-4">{recommendedModel.price}</p>
+                
+                {/* Personality description - max 20 words */}
+                <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+                  <p className="text-gray-300 text-sm italic leading-relaxed">
+                    {getPersonalitySummary()}
+                  </p>
                 </div>
-                <div className="text-center">
-                  <h3 className="text-2xl font-light text-white mb-2">{recommendedModel.name}</h3>
-                  <p className="text-gray-400 text-lg mb-4">{recommendedModel.price}</p>
-                  
-                  {/* Personality description - max 20 words */}
-                  <div className="mb-6 p-4 bg-gray-800 rounded-lg">
-                    <p className="text-gray-300 text-sm italic leading-relaxed">
-                      {getPersonalitySummary()}
-                    </p>
-                  </div>
-                  
-                  <p className="text-gray-500 text-sm leading-relaxed mb-6">{recommendedModel.description}</p>
-                  <a 
-                    href="https://www.prokeds1949.com/collections/uomo" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-block mt-4 px-8 py-3 bg-white text-black font-light tracking-wide hover:bg-gray-200 transition-colors"
-                  >
-                    SCOPRI LA COLLEZIONE
-                  </a>
-                </div>
+                
+                <p className="text-gray-500 text-sm leading-relaxed mb-6">{recommendedModel.description}</p>
+                <a 
+                  href="https://www.prokeds1949.com/collections/uomo" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-block mt-4 px-8 py-3 bg-white text-black font-light tracking-wide hover:bg-gray-200 transition-colors"
+                >
+                  SCOPRI LA COLLEZIONE
+                </a>
               </div>
             </div>
-          ) : null;
-        })()}
-        
-        <div className="w-full max-w-lg mx-auto mt-auto">
-          <div className="relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-              className="w-full bg-gray-900 border-b border-gray-700 px-4 py-3 pr-16 text-white focus:outline-none focus:border-gray-500 text-lg font-light"
-              placeholder="Scrivi la tua risposta..."
-              disabled={isLoading}
-            />
-            <button 
-              onClick={send} 
-              disabled={isLoading || !text.trim()}
-              className={`absolute right-0 top-0 h-full px-4 flex items-center justify-center transition-colors ${
-                isLoading || !text.trim() 
-                  ? 'text-gray-600 cursor-not-allowed' 
-                  : 'text-white hover:text-gray-300'
-              }`}
-              aria-label="Invia"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
           </div>
-        </div>
+        )}
+        
+        {!interviewCompleted && (
+          <div className="w-full max-w-lg mx-auto mt-auto">
+            <div className="relative">
+              <input
+                ref={inputRef}
+                type="text"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && send()}
+                className="w-full bg-gray-900 border-b border-gray-700 px-4 py-3 pr-16 text-white focus:outline-none focus:border-gray-500 text-lg font-light"
+                placeholder="Scrivi la tua risposta..."
+                disabled={isLoading}
+              />
+              <button 
+                onClick={send} 
+                disabled={isLoading || !text.trim()}
+                className={`absolute right-0 top-0 h-full px-4 flex items-center justify-center transition-colors ${
+                  isLoading || !text.trim()
+                    ? 'text-gray-600 cursor-not-allowed' 
+                    : 'text-white hover:text-gray-300'
+                }`}
+                aria-label="Invia"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
       </main>
       
       <div ref={bottomRef} />

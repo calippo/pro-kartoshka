@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: prokedsai
+    env: node
+    nodeVersion: 20
+    plan: free
+    region: frankfurt
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true
