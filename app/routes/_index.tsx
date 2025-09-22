@@ -1,138 +1,437 @@
 import type { MetaFunction } from "@remix-run/node";
+import { useEffect, useState, useRef } from "react";
+
+// Message type for chat
+type Msg = { role: "user" | "assistant"; content: string; images?: string[] };
+
+// Pro-Keds models data
+const proKedsModels = [
+  {
+    name: "Orbit II Lo",
+    image: "https://www.prokeds1949.com/cdn/shop/files/ORBIT_II_LO_model_1000x.jpg?v=1748592445",
+    price: "220 EUR",
+    description: "Sneaker low-top con tomaia in canvas stone-washed e suola modellata a mano. Tecnologia Rubber Fusion™ per un'elevata resistenza e flessibilità."
+  },
+  {
+    name: "Orbit II Hi",
+    image: "https://www.prokeds1949.com/cdn/shop/files/ORBIT_HI_model_1000x.jpg?v=1748598717",
+    price: "240 EUR",
+    description: "Sneaker high-top in canvas stone-washed con fodera in pelle. Suola artigianale con base Vibram® e gomma spugna, integrata con tecnologia Rubber Fusion™."
+  },
+  {
+    name: "Intrepid",
+    image: "https://www.prokeds1949.com/cdn/shop/files/INTREPID_model_1000x.jpg?v=1748601521",
+    price: "180 EUR",
+    description: "Sneaker vulcanizzata con suola ottenuta tramite fusione ad alta temperatura di cinque strati foxing. Massima aderenza, flessibilità e struttura."
+  },
+  {
+    name: "Field King",
+    image: "https://www.prokeds1949.com/cdn/shop/files/Field_King-model_1000x.jpg?v=1748597901",
+    price: "180 EUR",
+    description: "Sneaker mid-cut con linguetta reversibile e costruzione multistrato. Design deciso, pensato per contesti dinamici e urban."
+  },
+  {
+    name: "Court Ace",
+    image: "https://www.prokeds1949.com/cdn/shop/files/court_ace_model_1000x.jpg?v=1748600656",
+    price: "180 EUR",
+    description: "Sneaker low-top con tomaia in materiali misti e inserti in pelle. Proporzioni bilanciate, struttura essenziale e dettagli tecnici."
+  }
+];
+
+// Add skeleton loading component
+const SkeletonLoading = () => (
+  <div className="w-full max-w-2xl mx-auto text-center animate-pulse">
+    <div className="h-6 bg-gray-700 rounded w-3/4 mx-auto mb-4"></div>
+    <div className="h-4 bg-gray-700 rounded w-1/2 mx-auto"></div>
+  </div>
+);
+
+// MessageBubble component for better organization
+const MessageBubble = ({ message }: { message: Msg }) => {
+  const [loadedImages, setLoadedImages] = useState<boolean[]>(
+    message.images ? message.images.map(() => false) : []
+  );
+  
+  const handleImageLoad = (index: number) => {
+    setLoadedImages(prev => {
+      const newState = [...prev];
+      newState[index] = true;
+      return newState;
+    });
+  };
+  
+  return (
+    <div className="w-full max-w-2xl mx-auto">
+      <div className={`text-center ${message.role === "assistant" ? "" : "mt-8"}`}>
+        <h3 className={`text-lg italic font-light mb-2 ${message.role === "user" ? "text-gray-400" : "text-gray-300"}`}>
+          {message.role === "user" ? "Tu" : "Fashion Advisor"}
+        </h3>
+        <div className={`mx-auto text-xl font-light tracking-wide text-center whitespace-pre-line ${message.role === "user" ? "text-gray-300" : "text-white"}`}>
+          {message.content}
+        </div>
+        
+        {message.images && message.images.length > 0 && (
+          <div className="grid grid-cols-2 gap-6 max-w-xl mx-auto mt-8">
+            {message.images.map((url, j) => (
+              <div key={j} className="relative">
+                {!loadedImages[j] && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-gray-600 border-t-gray-300 rounded-full animate-spin"></div>
+                  </div>
+                )}
+                <img 
+                  src={url} 
+                  alt="sneaker suggestion" 
+                  className={`w-full h-auto object-cover rounded-lg shadow-lg ${
+                    !loadedImages[j] ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'
+                  }`}
+                  loading="lazy"
+                  onLoad={() => handleImageLoad(j)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Add a component for the sneaker models showcase
+const ProKedsModels = () => {
+  const models = [
+    {
+      name: "Orbit II Lo",
+      image: "https://www.prokeds1949.com/cdn/shop/files/ORBIT_II_LO_model_1000x.jpg?v=1748592445"
+    },
+    {
+      name: "Orbit II Hi", 
+      image: "https://www.prokeds1949.com/cdn/shop/files/ORBIT_HI_model_1000x.jpg?v=1748598717"
+    },
+    {
+      name: "Intrepid",
+      image: "https://www.prokeds1949.com/cdn/shop/files/INTREPID_model_1000x.jpg?v=1748601521"
+    },
+    {
+      name: "Field King",
+      image: "https://www.prokeds1949.com/cdn/shop/files/Field_King-model_1000x.jpg?v=1748597901"
+    },
+    {
+      name: "Court Ace",
+      image: "https://www.prokeds1949.com/cdn/shop/files/court_ace_model_1000x.jpg?v=1748600656"
+    }
+  ];
+
+  return (
+    <div className="w-full max-w-6xl mx-auto mt-16 px-4">
+      <h2 className="text-2xl font-light text-center tracking-widest uppercase mb-12 text-gray-300">
+        I Nostri Modelli Pro-Keds 1949
+      </h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
+        {models.map((model, index) => (
+          <div key={index} className="text-center">
+            <div className="bg-gray-900 rounded-lg p-4 hover:bg-gray-800 transition-colors">
+              <img 
+                src={model.image} 
+                alt={model.name}
+                className="w-full h-auto object-cover rounded-md mb-4"
+                loading="lazy"
+              />
+              <h3 className="text-sm font-light text-gray-300 tracking-wide">
+                {model.name}
+              </h3>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "Sneaker Advisor" },
+    { name: "description", content: "Chat con un esperto di fashion per trovare le sneaker perfette per te." },
   ];
 };
 
 export default function Index() {
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [text, setText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const stepRef = useRef(1);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Get only the last question and answer for display
+  const displayMessages = () => {
+    if (msgs.length === 0) return [];
+    
+    // If we only have the welcome message
+    if (msgs.length === 1 && msgs[0].role === "assistant") {
+      return [msgs[0]];
+    }
+    
+    // Find the last user message index
+    const lastUserIndex = [...msgs].reverse().findIndex(m => m.role === "user");
+    
+    if (lastUserIndex === -1) return [msgs[msgs.length - 1]];
+    
+    const lastUserPosition = msgs.length - 1 - lastUserIndex;
+    const assistantResponse = lastUserPosition < msgs.length - 1 ? msgs[lastUserPosition + 1] : null;
+    
+    return [
+      msgs[lastUserPosition],
+      ...(assistantResponse ? [assistantResponse] : [])
+    ];
+  };
+
+  // Check if we're at the final step (step 5 or higher) and have a recommendation
+  const getRecommendedModel = () => {
+    if (stepRef.current >= 5 && msgs.length > 1) {
+      const lastAssistantMessage = msgs.filter(m => m.role === "assistant").pop();
+      if (lastAssistantMessage?.content) {
+        // Extract model name from the response
+        const content = lastAssistantMessage.content.toLowerCase();
+        if (content.includes('orbit ii lo') || content.includes('orbit lo')) {
+          return proKedsModels.find(m => m.name === "Orbit II Lo");
+        } else if (content.includes('orbit ii hi') || content.includes('orbit hi')) {
+          return proKedsModels.find(m => m.name === "Orbit II Hi");
+        } else if (content.includes('field king')) {
+          return proKedsModels.find(m => m.name === "Field King");
+        } else if (content.includes('court ace')) {
+          return proKedsModels.find(m => m.name === "Court Ace");
+        } else if (content.includes('intrepid')) {
+          return proKedsModels.find(m => m.name === "Intrepid");
+        }
+      }
+    }
+    return null;
+  };
+
+  // Extract personality summary from AI response
+  const getPersonalitySummary = () => {
+    if (stepRef.current >= 5 && msgs.length > 1) {
+      const lastAssistantMessage = msgs.filter(m => m.role === "assistant").pop();
+      if (lastAssistantMessage?.content) {
+        // Look for the SINTESI pattern
+        const content = lastAssistantMessage.content;
+        const sintesiMatch = content.match(/💫\s*SINTESI:\s*([^💫\n]+)/i);
+        if (sintesiMatch) {
+          return sintesiMatch[1].trim();
+        }
+        
+        // Fallback: extract from Personalità section if SINTESI not found
+        const personalitaMatch = content.match(/Personalità:\s*([^\n]+)/i);
+        if (personalitaMatch) {
+          const personalita = personalitaMatch[1].trim();
+          // Limit to 20 words
+          const words = personalita.split(' ').slice(0, 20);
+          return words.join(' ') + (personalita.split(' ').length > 20 ? '...' : '');
+        }
+      }
+    }
+    return "La tua personalità riflette autenticità, stile raffinato e ricerca dell'eccellenza in ogni dettaglio del tuo modo di essere.";
+  };
+
+  useEffect(() => {
+    // Welcome message
+    if (msgs.length === 0) {
+      setMsgs([
+        {
+          role: "assistant",
+          content: "Ciao! Sono il tuo consulente personale specializzato in sneakers Pro-Keds 1949. Ti aiuterò a trovare il modello Pro-Keds 1949 perfetto per il tuo stile."
+        }
+      ]);
+    }
+  }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs]);
+
+  const send = async () => {
+    if (!text.trim() || isLoading) return;
+    
+    const userMessage = { role: "user" as const, content: text };
+    const newMsgs: Msg[] = [...msgs, userMessage];
+    setMsgs(newMsgs);
+    setText("");
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const res = await fetch("/api/chat", {
+        method: "post",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMsgs, step: stepRef.current }),
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}`);
+      }
+      
+      const data: { text: string; images?: string[] } = await res.json();
+      setMsgs((m) => [...m, { role: "assistant", content: data.text, images: data.images }]);
+      stepRef.current++;
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : "Errore durante la comunicazione col server");
+      setMsgs((m) => [...m, { 
+        role: "assistant", 
+        content: "Mi dispiace, c'è stato un problema nella comunicazione. Riprova tra qualche istante." 
+      }]);
+    } finally {
+      setIsLoading(false);
+      // Focus the input field after sending
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  };
+
+  const retryLastMessage = () => {
+    if (msgs.length < 2 || isLoading) return;
+    
+    // Remove the last error message
+    setMsgs(msgs.slice(0, -1));
+    setIsLoading(true);
+    setError(null);
+    
+    // Retry the request
+    const messagesToSend = msgs.slice(0, -1);
+    
+    fetch("/api/chat", {
+      method: "post",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: messagesToSend, step: stepRef.current }),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        setMsgs((m) => [...m.slice(0, -1), { 
+          role: "assistant", 
+          content: data.text, 
+          images: data.images 
+        }]);
+        stepRef.current++;
+      })
+      .catch(e => {
+        console.error(e);
+        setError(e instanceof Error ? e.message : "Errore durante la comunicazione col server");
+        setMsgs((m) => [...m, { 
+          role: "assistant", 
+          content: "Mi dispiace, c'è ancora un problema nella comunicazione. Riprova più tardi." 
+        }]);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="flex flex-col items-center gap-16">
-        <header className="flex flex-col items-center gap-9">
-          <h1 className="leading text-2xl font-bold text-gray-800 dark:text-gray-100">
-            Welcome to <span className="sr-only">Remix</span>
-          </h1>
-          <div className="h-[144px] w-[434px]">
-            <img
-              src="/logo-light.png"
-              alt="Remix"
-              className="block w-full dark:hidden"
+    <div className="flex flex-col min-h-screen bg-black text-white font-['Cormorant_Garamond',_serif]">
+      <header className="py-8 border-b border-gray-800">
+        <h1 className="text-3xl font-light text-center tracking-widest uppercase">Pro‑Keds Advisor</h1>
+        <p className="text-center text-sm text-gray-400 mt-2 tracking-wide">Tradizione e innovazione in un processo produttivo di eccellenza</p>
+      </header>
+      
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-4xl space-y-16 mb-10">
+          {displayMessages().map((m, i) => (
+            <MessageBubble key={i} message={m} />
+          ))}
+          
+          {isLoading && <SkeletonLoading />}
+          
+          {error && (
+            <div className="text-center mt-8">
+              <button 
+                onClick={retryLastMessage}
+                className="text-sm bg-red-900 hover:bg-red-800 text-white px-4 py-2 rounded-full transition-colors"
+              >
+                Errore: clicca per riprovare
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Show only the recommended model at the end */}
+        {(() => {
+          const recommendedModel = getRecommendedModel();
+          return recommendedModel ? (
+            <div className="w-full max-w-2xl mb-16">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-light mb-4 text-gray-300 tracking-wide">[IL TUO MODELLO]</h2>
+              </div>
+              <div className="group bg-gray-900 rounded-lg p-8">
+                <div className="relative overflow-hidden rounded-lg mb-6">
+                  <img 
+                    src={recommendedModel.image} 
+                    alt={recommendedModel.name}
+                    className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
+                </div>
+                <div className="text-center">
+                  <h3 className="text-2xl font-light text-white mb-2">{recommendedModel.name}</h3>
+                  <p className="text-gray-400 text-lg mb-4">{recommendedModel.price}</p>
+                  
+                  {/* Personality description - max 20 words */}
+                  <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+                    <p className="text-gray-300 text-sm italic leading-relaxed">
+                      {getPersonalitySummary()}
+                    </p>
+                  </div>
+                  
+                  <p className="text-gray-500 text-sm leading-relaxed mb-6">{recommendedModel.description}</p>
+                  <a 
+                    href="https://www.prokeds1949.com/collections/uomo" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-block mt-4 px-8 py-3 bg-white text-black font-light tracking-wide hover:bg-gray-200 transition-colors"
+                  >
+                    SCOPRI LA COLLEZIONE
+                  </a>
+                </div>
+              </div>
+            </div>
+          ) : null;
+        })()}
+        
+        <div className="w-full max-w-lg mx-auto mt-auto">
+          <div className="relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && send()}
+              className="w-full bg-gray-900 border-b border-gray-700 px-4 py-3 pr-16 text-white focus:outline-none focus:border-gray-500 text-lg font-light"
+              placeholder="Scrivi la tua risposta..."
+              disabled={isLoading}
             />
-            <img
-              src="/logo-dark.png"
-              alt="Remix"
-              className="hidden w-full dark:block"
-            />
+            <button 
+              onClick={send} 
+              disabled={isLoading || !text.trim()}
+              className={`absolute right-0 top-0 h-full px-4 flex items-center justify-center transition-colors ${
+                isLoading || !text.trim() 
+                  ? 'text-gray-600 cursor-not-allowed' 
+                  : 'text-white hover:text-gray-300'
+              }`}
+              aria-label="Invia"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
           </div>
-        </header>
-        <nav className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-gray-200 p-6 dark:border-gray-700">
-          <p className="leading-6 text-gray-700 dark:text-gray-200">
-            What&apos;s next?
-          </p>
-          <ul>
-            {resources.map(({ href, text, icon }) => (
-              <li key={href}>
-                <a
-                  className="group flex items-center gap-3 self-stretch p-3 leading-normal text-blue-700 hover:underline dark:text-blue-500"
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {icon}
-                  {text}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
+        </div>
+      </main>
+      
+      <div ref={bottomRef} />
     </div>
   );
 }
-
-const resources = [
-  {
-    href: "https://remix.run/start/quickstart",
-    text: "Quick Start (5 min)",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="20"
-        viewBox="0 0 20 20"
-        fill="none"
-        className="stroke-gray-600 group-hover:stroke-current dark:stroke-gray-300"
-      >
-        <path
-          d="M8.51851 12.0741L7.92592 18L15.6296 9.7037L11.4815 7.33333L12.0741 2L4.37036 10.2963L8.51851 12.0741Z"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    href: "https://remix.run/start/tutorial",
-    text: "Tutorial (30 min)",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="20"
-        viewBox="0 0 20 20"
-        fill="none"
-        className="stroke-gray-600 group-hover:stroke-current dark:stroke-gray-300"
-      >
-        <path
-          d="M4.561 12.749L3.15503 14.1549M3.00811 8.99944H1.01978M3.15503 3.84489L4.561 5.2508M8.3107 1.70923L8.3107 3.69749M13.4655 3.84489L12.0595 5.2508M18.1868 17.0974L16.635 18.6491C16.4636 18.8205 16.1858 18.8205 16.0144 18.6491L13.568 16.2028C13.383 16.0178 13.0784 16.0347 12.915 16.239L11.2697 18.2956C11.047 18.5739 10.6029 18.4847 10.505 18.142L7.85215 8.85711C7.75756 8.52603 8.06365 8.21994 8.39472 8.31453L17.6796 10.9673C18.0223 11.0653 18.1115 11.5094 17.8332 11.7321L15.7766 13.3773C15.5723 13.5408 15.5554 13.8454 15.7404 14.0304L18.1868 16.4767C18.3582 16.6481 18.3582 16.926 18.1868 17.0974Z"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    href: "https://remix.run/docs",
-    text: "Remix Docs",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="20"
-        viewBox="0 0 20 20"
-        fill="none"
-        className="stroke-gray-600 group-hover:stroke-current dark:stroke-gray-300"
-      >
-        <path
-          d="M9.99981 10.0751V9.99992M17.4688 17.4688C15.889 19.0485 11.2645 16.9853 7.13958 12.8604C3.01467 8.73546 0.951405 4.11091 2.53116 2.53116C4.11091 0.951405 8.73546 3.01467 12.8604 7.13958C16.9853 11.2645 19.0485 15.889 17.4688 17.4688ZM2.53132 17.4688C0.951566 15.8891 3.01483 11.2645 7.13974 7.13963C11.2647 3.01471 15.8892 0.951453 17.469 2.53121C19.0487 4.11096 16.9854 8.73551 12.8605 12.8604C8.73562 16.9853 4.11107 19.0486 2.53132 17.4688Z"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    href: "https://rmx.as/discord",
-    text: "Join Discord",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="20"
-        viewBox="0 0 24 20"
-        fill="none"
-        className="stroke-gray-600 group-hover:stroke-current dark:stroke-gray-300"
-      >
-        <path
-          d="M15.0686 1.25995L14.5477 1.17423L14.2913 1.63578C14.1754 1.84439 14.0545 2.08275 13.9422 2.31963C12.6461 2.16488 11.3406 2.16505 10.0445 2.32014C9.92822 2.08178 9.80478 1.84975 9.67412 1.62413L9.41449 1.17584L8.90333 1.25995C7.33547 1.51794 5.80717 1.99419 4.37748 2.66939L4.19 2.75793L4.07461 2.93019C1.23864 7.16437 0.46302 11.3053 0.838165 15.3924L0.868838 15.7266L1.13844 15.9264C2.81818 17.1714 4.68053 18.1233 6.68582 18.719L7.18892 18.8684L7.50166 18.4469C7.96179 17.8268 8.36504 17.1824 8.709 16.4944L8.71099 16.4904C10.8645 17.0471 13.128 17.0485 15.2821 16.4947C15.6261 17.1826 16.0293 17.8269 16.4892 18.4469L16.805 18.8725L17.3116 18.717C19.3056 18.105 21.1876 17.1751 22.8559 15.9238L23.1224 15.724L23.1528 15.3923C23.5873 10.6524 22.3579 6.53306 19.8947 2.90714L19.7759 2.73227L19.5833 2.64518C18.1437 1.99439 16.6386 1.51826 15.0686 1.25995ZM16.6074 10.7755L16.6074 10.7756C16.5934 11.6409 16.0212 12.1444 15.4783 12.1444C14.9297 12.1444 14.3493 11.6173 14.3493 10.7877C14.3493 9.94885 14.9378 9.41192 15.4783 9.41192C16.0471 9.41192 16.6209 9.93851 16.6074 10.7755ZM8.49373 12.1444C7.94513 12.1444 7.36471 11.6173 7.36471 10.7877C7.36471 9.94885 7.95323 9.41192 8.49373 9.41192C9.06038 9.41192 9.63892 9.93712 9.6417 10.7815C9.62517 11.6239 9.05462 12.1444 8.49373 12.1444Z"
-          strokeWidth="1.5"
-        />
-      </svg>
-    ),
-  },
-];
