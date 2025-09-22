@@ -2,7 +2,6 @@ services:
   - type: web
     name: prokedsai
     env: node
-    nodeVersion: 20
     plan: free
     region: frankfurt
     buildCommand: npm install && npm run build
