@@ -9,6 +9,7 @@ import {
   useLocation,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
+import { useState } from "react";
 
 import "./tailwind.css";
 
@@ -33,6 +34,119 @@ export const links: LinksFunction = () => [
     type: "image/svg+xml",
   },
 ];
+
+const PASSWORD_STORAGE_KEY = "sneaker-advisor:client-access";
+
+function PasswordGate({ children }: { children: React.ReactNode }) {
+  const [inputValue, setInputValue] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    try {
+      return window.localStorage.getItem(PASSWORD_STORAGE_KEY) === "true";
+    } catch (error) {
+      console.warn("Impossibile leggere lo stato di autenticazione dal localStorage.", error);
+      return false;
+    }
+  });
+
+  const configuredPassword = import.meta.env.VITE_APP_PASSWORD;
+  const passwordRequired = Boolean(configuredPassword);
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!passwordRequired) {
+      setIsAuthorized(true);
+      return;
+    }
+
+    if (inputValue === configuredPassword) {
+      setIsAuthorized(true);
+      setErrorMessage(null);
+      setInputValue("");
+
+      try {
+        window.localStorage.setItem(PASSWORD_STORAGE_KEY, "true");
+      } catch (error) {
+        console.warn("Impossibile salvare lo stato di autenticazione nel localStorage.", error);
+      }
+
+      return;
+    }
+
+    setErrorMessage("Password errata. Riprova.");
+  };
+
+  if (isAuthorized || !passwordRequired) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Sneaker Advisor</p>
+            <h1 className="text-3xl font-semibold mt-2">Area riservata</h1>
+          </div>
+          <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="h-6 w-6 text-blue-400"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75M6.75 10.5h10.5l.75.75v8.25l-.75.75H6.75l-.75-.75v-8.25l.75-.75z"
+              />
+            </svg>
+          </div>
+        </div>
+        <p className="text-sm text-gray-400 mb-6">
+          Inserisci la password fornita dal team per accedere all'applicazione.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="access-password" className="block text-xs uppercase tracking-[0.3em] text-gray-500 mb-2">
+              Password
+            </label>
+            <input
+              id="access-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={inputValue}
+              onChange={(event) => {
+                setInputValue(event.currentTarget.value);
+                if (errorMessage) {
+                  setErrorMessage(null);
+                }
+              }}
+              className="w-full rounded-xl bg-gray-950 border border-gray-800 px-4 py-3 text-base text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="••••••••"
+              autoFocus
+            />
+          </div>
+          {errorMessage ? <p className="text-sm text-red-400">{errorMessage}</p> : null}
+          <button
+            type="submit"
+            className="w-full bg-blue-500 hover:bg-blue-400 text-black font-semibold py-3 rounded-xl transition-colors"
+          >
+            Accedi
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 // Error boundary component
 export function ErrorBoundary() {
